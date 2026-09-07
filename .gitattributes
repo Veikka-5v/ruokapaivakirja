@@ -1,0 +1,3 @@
+# Yhtenäiset rivinvaihdot koneiden välillä: repossa LF, työkopiossa alustan mukaan.
+* text=auto eol=lf
+*.png binary

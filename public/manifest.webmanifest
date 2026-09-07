@@ -1,0 +1,17 @@
+{
+  "name": "Ruokapäiväkirja",
+  "short_name": "Ruoka",
+  "description": "Arvioi aterian kalorit ja proteiinin valokuvasta. Data pysyy laitteella.",
+  "lang": "fi",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F2F3F5",
+  "theme_color": "#2F6F5E",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
