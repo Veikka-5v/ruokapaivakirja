@@ -246,7 +246,6 @@ export default function Asetukset({ apiAvain, malli, onVaihdaAvain, onVaihdaMall
           style={{
             ...haamunappi,
             width: "100%",
-            boxSizing: "border-box",
             marginTop: 8,
             display: "block",
             textAlign: "center",

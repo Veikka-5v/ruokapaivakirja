@@ -32,8 +32,12 @@ export const kentta = {
   outlineColor: C.pine,
 };
 
+// boxSizing on pakollinen, koska näitä tyylejä käytetään myös <label>-
+// elementeissä (tiedostosyötteen kuori). <button> saa border-boxin
+// selaimelta, <label> ei — ilman tätä width:100% + padding menee yli.
 export const paanappi = {
   width: "100%",
+  boxSizing: "border-box",
   background: C.pine,
   color: "#FFF",
   border: "none",
@@ -45,6 +49,7 @@ export const paanappi = {
 };
 
 export const haamunappi = {
+  boxSizing: "border-box",
   background: "#FFF",
   color: C.ink,
   border: `1px solid ${C.line}`,
