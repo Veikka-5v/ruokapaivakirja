@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { kaikkiAteriat, korvaaKaikkiAteriat } from "../db.js";
 import { MALLIT, OLETUSMALLI, hintaDollareina } from "../api.js";
 import { C, kortti, kentta, paanappi, haamunappi, serif, Otsikko, Rivi, Virheruutu } from "../ui.jsx";
+import { VERSIO, KAANNETTY, muotoileAika, haePalvelimenVersio, paivitaNyt } from "../versio.js";
 
 function naytaAvain(avain) {
   if (!avain) return "";
@@ -18,6 +19,21 @@ export default function Asetukset({ apiAvain, malli, onVaihdaAvain, onVaihdaMall
   const [viesti, setViesti] = useState("");
   const [virhe, setVirhe] = useState("");
   const [kaytto, setKaytto] = useState(null);
+
+  // null = ei vielä tarkistettu, "tarkistaa" | "ajantasalla" | "uusi" | "virhe"
+  const [paivitys, setPaivitys] = useState(null);
+  const [palvelimella, setPalvelimella] = useState(null);
+
+  async function tarkistaPaivitys() {
+    setPaivitys("tarkistaa");
+    try {
+      const p = await haePalvelimenVersio();
+      setPalvelimella(p);
+      setPaivitys(p.versio && p.versio !== VERSIO ? "uusi" : "ajantasalla");
+    } catch (e) {
+      setPaivitys("virhe");
+    }
+  }
 
   useEffect(() => {
     let peruttu = false;
@@ -263,6 +279,49 @@ export default function Asetukset({ apiAvain, malli, onVaihdaAvain, onVaihdaMall
         <div style={{ fontSize: 12, color: C.muted, marginTop: 10, lineHeight: 1.55 }}>
           Varmuuskopio sisältää kirjaukset mutta ei pikkukuvia. Tuonti korvaa kaikki nykyiset
           kirjaukset.
+        </div>
+      </div>
+
+      <Otsikko teksti="Versio" />
+      <div style={kortti}>
+        <Rivi nimi="Käytössä" arvo={VERSIO} vihje={muotoileAika(KAANNETTY)} />
+
+        {paivitys === "uusi" && palvelimella && (
+          <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: 6 }}>
+            <Rivi
+              nimi="Palvelimella"
+              arvo={palvelimella.versio}
+              vihje={muotoileAika(palvelimella.kaannetty)}
+            />
+          </div>
+        )}
+
+        <button
+          onClick={tarkistaPaivitys}
+          disabled={paivitys === "tarkistaa"}
+          style={{
+            ...haamunappi,
+            width: "100%",
+            marginTop: 10,
+            opacity: paivitys === "tarkistaa" ? 0.6 : 1,
+          }}
+        >
+          {paivitys === "tarkistaa" ? "Tarkistetaan…" : "Tarkista päivitykset"}
+        </button>
+
+        {paivitys === "uusi" && (
+          <button onClick={paivitaNyt} style={{ ...paanappi, width: "100%", marginTop: 8 }}>
+            Ota uusi versio käyttöön
+          </button>
+        )}
+
+        <div style={{ fontSize: 12, color: C.muted, marginTop: 10, lineHeight: 1.55 }}>
+          {paivitys === "ajantasalla" && "Uusin versio on jo käytössä."}
+          {paivitys === "uusi" &&
+            "Uusi versio on julkaistu. Päivitys tyhjentää sovelluksen välimuistin ja lataa sivun uudelleen — kirjaukset säilyvät."}
+          {paivitys === "virhe" && "Versiotietoa ei saatu haettua. Tarkista verkkoyhteys."}
+          {!paivitys &&
+            "Appi tarjoilee vanhan version välimuistista ja hakee uuden taustalla, joten julkaisu näkyy muuten vasta seuraavalla avauksella."}
         </div>
       </div>
 

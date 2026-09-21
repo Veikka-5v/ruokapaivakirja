@@ -151,6 +151,12 @@ huonosti, koska vika oli ohjeessa, kuvassa ja skeemassa.
   näytetään erikseen, ja uudelleenyritys onnistuu ilman että kuva katoaa.
 - Offline: appi aukeaa ja vanha data näkyy ilman verkkoa. Vain analyysi vaatii
   yhteyden.
+- Asetusnäkymä näyttää käytössä olevan version (lyhyt commit-hash ja
+  käännösaika) ja osaa verrata sitä palvelimen `versio.json`-tiedostoon.
+  Service worker tarjoilee vanhan version välimuistista ja hakee uuden vasta
+  taustalla, joten julkaisu näkyy muuten vasta seuraavalla avauksella; "Ota
+  uusi versio käyttöön" tyhjentää Cache Storagen ja lataa sivun uudelleen.
+  Kirjaukset ovat IndexedDB:ssä eivätkä katoa.
 - `Analyysi.jsx` suojaa tuplakutsulta ref-lipulla, koska React StrictMode ajaa
   efektin kehityksessä kahdesti ja jokainen kutsu maksaa oikeaa rahaa.
 - Selaimen tietojen tyhjennys poistaa kirjaukset. Asetuksista saa JSON-

@@ -25,6 +25,10 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // api.anthropic.com ohittaa sw:n
 
+  // versio.json kertoo, mikä versio palvelimella on. Välimuistista tarjoiltuna
+  // se kertoisi mikä versio siellä oli, eli juuri sen mitä ollaan selvittämässä.
+  if (url.pathname.endsWith("/versio.json")) return;
+
   e.respondWith(
     (async () => {
       const cache = await caches.open(CACHE);
