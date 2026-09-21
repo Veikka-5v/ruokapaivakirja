@@ -85,14 +85,49 @@ export default function Analyysi({ odottava, apiAvain, malli, onKirjaa, onHylkaa
         </div>
       </div>
 
+      {/* Erittely riveittäin, ei yhtenä pötkönä: kokonaisluvut ovat näiden summa,
+          joten väärä rivi kertoo suoraan mikä arviossa meni pieleen. */}
       {tulos && tulos.ainesosat.length > 0 && (
-        <div style={{ fontSize: 12, color: C.muted, marginTop: 10, lineHeight: 1.5 }}>
+        <div style={{ marginTop: 12, borderTop: `1px solid ${C.line}` }}>
           {tulos.ainesosat.map((a, i) => (
-            <span key={i}>
-              {i > 0 && ", "}
-              {a.aine}
-              {a.maara_g ? ` ${a.maara_g} g` : ""}
-            </span>
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: 8,
+                padding: "8px 0",
+                borderBottom: `1px solid ${C.line}`,
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13 }}>
+                  {a.aine}
+                  {a.maara_g ? <span style={{ color: C.muted }}> {a.maara_g} g</span> : null}
+                  {a.lahde === "pakkausmerkintä" && (
+                    <span style={{ color: C.pine, fontSize: 11 }}> pakkauksesta</span>
+                  )}
+                </div>
+                {a.peruste && (
+                  <div style={{ fontSize: 11, color: C.muted, marginTop: 2, lineHeight: 1.4 }}>
+                    {a.peruste}
+                  </div>
+                )}
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: C.muted,
+                  textAlign: "right",
+                  flexShrink: 0,
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {a.kcal} kcal
+                <br />
+                {a.proteiini} g prot.
+              </div>
+            </div>
           ))}
         </div>
       )}

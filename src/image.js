@@ -1,11 +1,20 @@
-// Puhelimen täysikokoinen kuva on turhaa kaistaa ja tokeneita: pisin sivu
-// 768 pikseliin ennen lähetystä. Kuvan hinta on ⌈leveys/28⌉ × ⌈korkeus/28⌉
-// visuaalista tokenia, eli 768×576 maksaa 588 tokenia eikä sitä skaalata
-// alaspäin millään mallilla.
+// Pisin sivu 1568 pikseliin ennen lähetystä. 768 px riitti tunnistamaan mitä
+// lautasella on, mutta ei lukemaan pakkauksen ravintosisältötaulukkoa, ja juuri
+// se lukema on tarkin käytettävissä oleva tieto. 1568 on myös raja, jonka yli
+// API skaalaisi kuvan joka tapauksessa alas.
+//
+// Kuvan hinta on ⌈leveys/28⌉ × ⌈korkeus/28⌉ visuaalista tokenia: 1568×1176 on
+// 2352 tokenia entisen 588:n sijaan. Sonnet 5:llä analyysi maksaa noin 0,008 $
+// aiemman 0,003 $ sijaan — kolmella aterialla päivässä noin 9 $ vuodessa.
+// Väärä proteiiniluku maksaa enemmän.
+//
+// Pakkausteksti kestää myös vähemmän JPEG-pakkausta kuin ruoka, joten
+// lähetettävä kuva tallennetaan paremmalla laadulla kuin pikkukuva.
 
-const LAHETYS_SIVU = 768;
+const LAHETYS_SIVU = 1568;
 const PIKKUKUVA_SIVU = 300;
 const LAATU = 0.8;
+const LAHETYS_LAATU = 0.92;
 
 async function lataaKuva(tiedosto) {
   // createImageBitmap huomioi EXIF-kierron; kyljellään oleva kuva
@@ -52,7 +61,7 @@ export async function kasitteleKuva(tiedosto) {
   if (typeof kuva.close === "function") kuva.close();
 
   return {
-    base64: iso.toDataURL("image/jpeg", LAATU).split(",")[1],
+    base64: iso.toDataURL("image/jpeg", LAHETYS_LAATU).split(",")[1],
     esikatselu: pikku.toDataURL("image/jpeg", LAATU),
     pikkukuva: await blobiksi(pikku, LAATU),
     leveys: iso.width,

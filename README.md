@@ -37,15 +37,20 @@ ainoa asia, joka oikeasti rajoittaa vahinkoa, jos avain vuotaa.
 ## Kustannus
 
 Kuva maksaa `⌈leveys/28⌉ × ⌈korkeus/28⌉` visuaalista tokenia. Appi skaalaa
-pisimmän sivun 768 pikseliin, joten 768×576 kuva on 588 tokenia eikä sitä
-skaalata alaspäin millään mallilla. Promptin kanssa yhteensä noin 750 tokenia
-sisään ja 180 ulos.
+pisimmän sivun 1568 pikseliin, joten 1568×1176 kuva on 2352 tokenia eikä sitä
+skaalata alaspäin millään mallilla. Promptin kanssa yhteensä noin 2 600 tokenia
+sisään ja 300 ulos.
 
 | Malli | $/analyysi | Analyysiä ~5 $:lla |
 |---|---|---|
-| Haiku 4.5 | 0,0018 | ~2 800 |
-| Sonnet 5 (oletus) | 0,0033 | ~1 500 |
-| Opus 5 | 0,0090 | ~550 |
+| Haiku 4.5 | 0,0041 | ~1 200 |
+| Sonnet 5 (oletus) | 0,0082 | ~600 |
+| Opus 5 | 0,0205 | ~240 |
+
+Kuvaa lähetettiin aiemmin 768 pikselin levyisenä, jolloin analyysi maksoi noin
+kolmanneksen tästä. Se ei riittänyt lukemaan pakkauksen ravintosisältötaulukkoa,
+ja juuri se lukema on tarkin saatavilla oleva tieto — halvempi väärä luku ei ole
+säästö. Kolmella aterialla päivässä vuosikustannus on Sonnetilla noin 9 $.
 
 Nämä ovat arvioita. Appi tallentaa jokaisen kutsun todellisen
 token-kulutuksen ateriariville, ja asetusnäkymä näyttää toteutuneen
@@ -112,6 +117,31 @@ Kolme muutosta, kaikki briefin omien tavoitteiden suuntaan:
   ei voi tuottaa skeeman vastaista vastausta, joten koodilohkojen siivousta ja
   sulkeiden etsimistä ei tarvita eikä parsintavirhettä voi tulla. Skeema ei tue
   `minimum`-rajoitteita, joten lukujen siistiminen tehdään `api.js`:ssä.
+
+## Miten arvion tarkkuutta parannettiin
+
+Ensimmäinen versio arvioi rahkapurkin proteiinimääräksi 67 g, vaikka kannessa
+luki 25 g. Vian löytäminen ei vaatinut mallin vaihtoa — Opus 5 arvioi yhtä
+huonosti, koska vika oli ohjeessa, kuvassa ja skeemassa.
+
+- **Prompti antaa todistehierarkian.** Vanha ohje sanoi "arvioi annoskoko kuvan
+  perusteella" eikä maininnut tekstiä lainkaan, joten malli teki juuri niin ja
+  ohitti pakkausmerkinnän. Uusi ohje käskee lukea kuvan tekstin ensin ja asettaa
+  järjestyksen pakkausmerkintä → käyttäjän lisätieto → silmämääräinen arvio. Se
+  myös käskee tarkistaa erikseen, koskeeko lukema 100 g:aa, annosta vai koko
+  pakkausta, ja paljonko tuotetta todella syödään.
+- **Kuva lähetetään 1568 pikselin levyisenä**, koska 768 px ei riitä lukemaan
+  ravintosisältötaulukkoa. Parannettu ohje ei auta, jos teksti ei erotu.
+- **Skeema pakottaa erittelyyn.** Ainesosakohtaiset `kcal` ja `proteiini_g`
+  tulevat generointijärjestyksessä ennen kokonaisuutta, ja kokonaisarvot
+  lasketaan `api.js`:ssä summaamalla — niitä ei kysytä mallilta lainkaan.
+  Aiemmin malli tuotti yhden kokonaisluvun ilman välivaiheita, ja koska
+  `thinking` on pois päältä, välivaiheelle ei ollut muuta tilaa kuin skeema.
+  Summa ei voi enää olla ristiriidassa osiensa kanssa.
+- **`peruste` ja `lahde` näkyvät käyttöliittymässä.** Jokainen rivi kertoo,
+  mihin luku perustuu, ja pakkauksesta luetut on merkitty. Väärä luku on
+  paikannettavissa yhteen ainesosaan sen sijaan että koko arvio olisi vain
+  väärässä.
 
 ## Huomioita
 

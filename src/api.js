@@ -21,39 +21,78 @@ export function hintaDollareina(malli, sisaanTokenit, ulosTokenit) {
 
 const OHJE = `Olet ravitsemusanalyytikko. Arvioi kuvassa näkyvä ateria.
 
-Arvioi annoskoko kuvan perusteella. Ota huomioon näkymätön rasva, kuten
-paistorasva ja kastikkeet. Jos kuvassa ei ole ruokaa, palauta kcal 0 ja
-kerro syy huomio-kentässä.`;
+Lue ensin kaikki kuvassa näkyvä teksti: pakkausmerkinnät, ravintosisältötaulukot,
+tuotenimet ja annoskoot. Pakkauksessa lukeva arvo on mittaustulos, oma arviosi ei.
+
+Käytä tietolähteitä tässä järjestyksessä:
+1. Kuvassa näkyvä pakkausmerkintä tai ravintosisältötaulukko
+2. Käyttäjän antama lisätieto
+3. Oma arviosi ruoan ulkonäöstä
+
+Jos ravintosisältö on luettavissa pakkauksesta, käytä sitä sellaisenaan. Älä
+korvaa sitä yleistiedollasi vastaavista tuotteista, vaikka lukema poikkeaisi
+odottamastasi.
+
+Tarkista, mitä lukema koskee: 100 grammaa, yhtä annosta vai koko pakkausta.
+Tarkista erikseen, paljonko tuotetta todella syödään — koko pakkaus, osa siitä
+vai lautaselle otettu annos.
+
+Erittele jokainen ainesosa omaksi rivikseen ja anna sille massa, energia ja
+proteiini. Laske arvot massasta äläkä päättele kokonaislukua suoraan.
+Kokonaissummat lasketaan ainesosista, joten älä laske niitä itse.
+
+Ota huomioon näkymätön rasva, kuten paistorasva ja kastikkeet.
+Jos kuvassa ei ole ruokaa, palauta tyhjä ainesosalista ja kerro syy
+huomio-kentässä.`;
 
 // Rakenteinen vastaus: malli ei voi tuottaa skeeman vastaista JSONia, joten
 // koodilohkojen siivousta tai sulkeiden etsimistä ei tarvita. Skeema ei tue
 // minimum/maximum-rajoitteita, joten lukujen siistiminen tehdään alla.
+//
+// Kentät ovat generointijärjestyksessä: ainesosat tulevat ennen kokonaisuutta,
+// joten malli joutuu erittelemään ennen kuin mitään summataan. Kokonaisarvoja
+// ei kysytä mallilta lainkaan — ne lasketaan ainesosista täällä. Näin summa ei
+// voi olla ristiriidassa osiensa kanssa, ja virheellinen rivi näkyy käyttäjälle
+// sellaisenaan.
 const SKEEMA = {
   type: "object",
   properties: {
     nimi: { type: "string", description: "Lyhyt kuvaus ateriasta suomeksi" },
     ainesosat: {
       type: "array",
-      description: "Tunnistetut ainesosat arvioituine massoineen",
+      description: "Jokainen ainesosa erikseen, massoineen ja ravintoarvoineen",
       items: {
         type: "object",
         properties: {
           aine: { type: "string" },
-          maara_g: { type: "number", description: "Arvioitu määrä grammoina" },
+          maara_g: { type: "number", description: "Syöty määrä grammoina" },
+          peruste: {
+            type: "string",
+            description:
+              "Mistä määrä ja ravintoarvot on saatu: mitä pakkauksessa luki, " +
+              "mitä käyttäjä kertoi, tai mihin silmämääräinen arvio perustuu",
+          },
+          lahde: {
+            type: "string",
+            enum: ["pakkausmerkintä", "käyttäjän tieto", "arvio"],
+            description: "Vahvin käytetty tietolähde tälle ainesosalle",
+          },
+          kcal: { type: "number", description: "Tämän ainesosan energia kilokaloreina" },
+          proteiini_g: { type: "number", description: "Tämän ainesosan proteiini grammoina" },
         },
-        required: ["aine", "maara_g"],
+        required: ["aine", "maara_g", "peruste", "lahde", "kcal", "proteiini_g"],
         additionalProperties: false,
       },
     },
-    kcal: { type: "number", description: "Koko annoksen energiasisältö kilokaloreina" },
-    proteiini_g: { type: "number", description: "Koko annoksen proteiini grammoina" },
     varmuus: { type: "string", enum: ["matala", "keskitaso", "korkea"] },
     huomio: {
       type: "string",
-      description: "Yksi lyhyt lause siitä, mikä arviossa on epävarminta",
+      description:
+        "Yksi lyhyt lause siitä, mikä arviossa on epävarminta. Jos kuvassa näkyi " +
+        "pakkausmerkintä jota ei saanut luettua, kerro se tässä.",
     },
   },
-  required: ["nimi", "ainesosat", "kcal", "proteiini_g", "varmuus", "huomio"],
+  required: ["nimi", "ainesosat", "varmuus", "huomio"],
   additionalProperties: false,
 };
 
@@ -168,15 +207,30 @@ export async function analysoiKuva({ base64, lisatieto, avain, malli = OLETUSMAL
     throw new ApiVirhe("Vastaus ei ollut odotetussa muodossa. Yritä uudelleen.");
   }
 
+  const ainesosat = Array.isArray(jasennetty.ainesosat)
+    ? jasennetty.ainesosat
+        .filter((a) => a && a.aine)
+        .map((a) => ({
+          aine: String(a.aine),
+          maara_g: siistiLuku(a.maara_g),
+          peruste: String(a.peruste || ""),
+          lahde: ["pakkausmerkintä", "käyttäjän tieto", "arvio"].includes(a.lahde)
+            ? a.lahde
+            : "arvio",
+          kcal: siistiLuku(a.kcal),
+          proteiini: siistiLuku(a.proteiini_g),
+        }))
+    : [];
+
+  // Kokonaisarvot summataan ainesosista, ei kysytä mallilta. Yhteenlasku on
+  // asia, jonka koodi tekee oikein ja kielimalli ei välttämättä.
+  const summa = (kentta) => ainesosat.reduce((s, a) => s + a[kentta], 0);
+
   return {
     nimi: String(jasennetty.nimi || "Ateria").trim() || "Ateria",
-    ainesosat: Array.isArray(jasennetty.ainesosat)
-      ? jasennetty.ainesosat
-          .filter((a) => a && a.aine)
-          .map((a) => ({ aine: String(a.aine), maara_g: siistiLuku(a.maara_g) }))
-      : [],
-    kcal: siistiLuku(jasennetty.kcal),
-    proteiini: siistiLuku(jasennetty.proteiini_g),
+    ainesosat,
+    kcal: summa("kcal"),
+    proteiini: summa("proteiini"),
     varmuus: ["matala", "keskitaso", "korkea"].includes(jasennetty.varmuus)
       ? jasennetty.varmuus
       : "keskitaso",
