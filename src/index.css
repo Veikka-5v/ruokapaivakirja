@@ -3,7 +3,7 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: #f2f3f5;
+  background: #eceef1; /* sama kuin C.bg */
 }
 
 #root {
@@ -12,4 +12,21 @@ body {
 
 * {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Numerokenttien nuolinapit pois: ne peittäisivät yksikön (kcal, g), eikä
+   kukaan kirjaa kaloreita yhden yksikön askelin. */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+button:focus-visible {
+  outline: 2px solid #2f6f5e;
+  outline-offset: 2px;
 }

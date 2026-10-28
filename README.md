@@ -90,17 +90,19 @@ Store `ateriat`, keyPath `id`, indeksi `pvm`:
 | `nimi` | string | |
 | `kcal` | number | käyttäjän hyväksymä arvo |
 | `proteiini` | number | käyttäjän hyväksymä arvo |
-| `aiKcal` | number | mallin alkuperäinen arvio |
-| `aiProteiini` | number | mallin alkuperäinen arvio |
-| `varmuus` | string | matala / keskitaso / korkea |
-| `kuva` | Blob | pikkukuva 300 px |
-| `malli` | string | kutsussa käytetty malli |
-| `sisaanTokenit` | number | `usage.input_tokens` |
-| `ulosTokenit` | number | `usage.output_tokens` |
+| `lahde` | string | `kuva` tai `kasin`; puuttuu vanhoilta riveiltä (= kuva) |
+| `aiKcal` | number | mallin alkuperäinen arvio, vain kuvasta |
+| `aiProteiini` | number | mallin alkuperäinen arvio, vain kuvasta |
+| `varmuus` | string | matala / keskitaso / korkea, vain kuvasta |
+| `kuva` | Blob | pikkukuva 300 px, vain kuvasta |
+| `malli` | string | kutsussa käytetty malli, vain kuvasta |
+| `sisaanTokenit` | number | `usage.input_tokens`, vain kuvasta |
+| `ulosTokenit` | number | `usage.output_tokens`, vain kuvasta |
 
 `aiKcal` ja `aiProteiini` tallennetaan aina erikseen korjatuista arvoista.
 Historianäkymän "Arvion tarkkuus" laskee näistä, kuinka systemaattisesti arviot
-heittävät ja mihin suuntaan.
+heittävät ja mihin suuntaan. Käsin kirjatuilla riveillä kenttiä ei ole, joten
+laskenta ohittaa ne — käsin kirjattu luku ei ole arvio.
 
 Store `asetukset`, keyPath `nimi`: `apiAvain`, `malli`.
 
@@ -142,6 +144,22 @@ huonosti, koska vika oli ohjeessa, kuvassa ja skeemassa.
   mihin luku perustuu, ja pakkauksesta luetut on merkitty. Väärä luku on
   paikannettavissa yhteen ainesosaan sen sijaan että koko arvio olisi vain
   väärässä.
+
+## Kirjauksen kulku
+
+Kirjauskortissa on kaksi tilaa: **Kuvasta** ja **Käsin**.
+
+Kuvasta kulkee kolmessa vaiheessa. Kuvan valinta näyttää esikatselun ja
+lisätietokentän, mutta ei kutsu APIa. Esikatselussa näkyy arvioitu hinta
+(`arvioiHinta` api.js:ssä). Vasta **Analysoi** liittää `Analyysi`-komponentin,
+ja kutsu lähtee silloin. Tuloksesta **Takaisin** palaa esikatseluun eikä
+tyhjään, joten saman kuvan voi analysoida uudelleen tarkemmalla lisätiedolla.
+
+Käsin-tilassa annetaan nimi, kcal ja proteiini. Kirjaus vaatii nimen ja
+vähintään yhden luvun. Ei API-kutsua.
+
+Aterialistassa rivin napautus avaa muokkauksen. Poisto on muokkauksen sisällä
+ja kaksivaiheinen, koska rivin napautus on helppo tehdä vahingossa.
 
 ## Huomioita
 

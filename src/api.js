@@ -19,6 +19,14 @@ export function hintaDollareina(malli, sisaanTokenit, ulosTokenit) {
   return ((sisaanTokenit || 0) * m.sisaan + (ulosTokenit || 0) * m.ulos) / 1e6;
 }
 
+// Arvio ennen kutsua, jotta hinnan näkee ennen Analysoi-painallusta.
+// Kuva: ⌈leveys/28⌉ × ⌈korkeus/28⌉ tokenia. Ohje ja skeema noin 450 tokenia
+// sisään, eritelty vastaus noin 350 ulos. Toteutunut hinta näkyy tuloksessa.
+export function arvioiHinta(malli, leveys, korkeus) {
+  const kuva = Math.ceil((leveys || 1568) / 28) * Math.ceil((korkeus || 1176) / 28);
+  return hintaDollareina(malli, kuva + 450, 350);
+}
+
 const OHJE = `Olet ravitsemusanalyytikko. Arvioi kuvassa näkyvä ateria.
 
 Lue ensin kaikki kuvassa näkyvä teksti: pakkausmerkinnät, ravintosisältötaulukot,

@@ -98,7 +98,10 @@ export default function Historia() {
     try {
       const kaikki = await kaikkiAteriat();
       const rivit = [
-        ["pvm", "aika", "ruoka", "kcal", "proteiini_g", "ai_kcal", "ai_proteiini_g"].join(","),
+        // lahde viimeisenä, jotta aiemmat sarakkeet pysyvät paikallaan.
+        // Ennen käsin kirjausta tallennetuilla riveillä ei ole kenttää; ne
+        // ovat kaikki kuvasta.
+        ["pvm", "aika", "ruoka", "kcal", "proteiini_g", "ai_kcal", "ai_proteiini_g", "lahde"].join(","),
         ...kaikki.map((a) =>
           [
             a.pvm,
@@ -108,6 +111,7 @@ export default function Historia() {
             a.proteiini,
             a.aiKcal == null ? "" : a.aiKcal,
             a.aiProteiini == null ? "" : a.aiProteiini,
+            a.lahde || "kuva",
           ].join(",")
         ),
       ].join("\n");

@@ -107,7 +107,7 @@ export default function App() {
       </div>
 
       <nav style={navi}>
-        <div style={{ maxWidth: 560, margin: "0 auto", display: "flex" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto", display: "flex", gap: 6, padding: "8px 12px" }}>
           {VALILEHDET.map((v) => {
             const aktiivinen = nakyma === v.id;
             return (
@@ -117,12 +117,14 @@ export default function App() {
                 aria-current={aktiivinen ? "page" : undefined}
                 style={{
                   flex: 1,
-                  background: "none",
+                  minHeight: 44,
+                  background: aktiivinen ? C.pineSoft : "none",
                   border: "none",
-                  borderTop: `2px solid ${aktiivinen ? C.pine : "transparent"}`,
-                  padding: "14px 4px",
-                  fontSize: 13,
-                  fontWeight: aktiivinen ? 600 : 400,
+                  borderRadius: 10,
+                  padding: "10px 4px",
+                  fontSize: 14,
+                  fontWeight: aktiivinen ? 600 : 500,
+                  fontFamily: "inherit",
                   color: aktiivinen ? C.pine : C.muted,
                   cursor: "pointer",
                 }}

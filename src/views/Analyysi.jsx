@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { analysoiKuva, hintaDollareina } from "../api.js";
+import { analysoiKuva, hintaDollareina, MALLIT } from "../api.js";
 import { C, kortti, paanappi, haamunappi, Lukukentta } from "../ui.jsx";
 
+// Liitetään vasta kun käyttäjä painaa Analysoi, ja kutsu lähtee heti
+// liittämisen jälkeen. Kuvan valinta yksinään ei koskaan käynnistä tätä.
 export default function Analyysi({ odottava, apiAvain, malli, onKirjaa, onHylkaa, onAvaaAsetukset }) {
   const [tulos, setTulos] = useState(null);
   const [virhe, setVirhe] = useState(null);
@@ -54,16 +56,26 @@ export default function Analyysi({ odottava, apiAvain, malli, onKirjaa, onHylkaa
     }
   }
 
+  const malliNimi = (MALLIT[malli] && MALLIT[malli].nimi) || malli;
+
   return (
-    <div style={{ ...kortti, marginTop: 12 }}>
+    <div style={{ ...kortti, marginTop: 14 }}>
       <div style={{ display: "flex", gap: 12 }}>
         <img
           src={odottava.esikatselu}
           alt=""
-          style={{ width: 76, height: 76, objectFit: "cover", borderRadius: 6, flexShrink: 0 }}
+          style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
         />
         <div style={{ flex: 1, minWidth: 0 }}>
-          {ladataa && <div style={{ fontSize: 15, color: C.muted }}>Arvioidaan&hellip;</div>}
+          {ladataa && (
+            <>
+              <div style={{ fontSize: 15, fontWeight: 600 }}>Analysoidaan&hellip;</div>
+              <div style={{ fontSize: 12, color: C.muted, marginTop: 4, lineHeight: 1.45 }}>
+                {malliNimi}
+                {odottava.lisatieto ? ` · ${odottava.lisatieto}` : ""}
+              </div>
+            </>
+          )}
 
           {virhe && (
             <div style={{ fontSize: 14, color: C.red, lineHeight: 1.5 }}>{virhe.message}</div>
@@ -71,8 +83,8 @@ export default function Analyysi({ odottava, apiAvain, malli, onKirjaa, onHylkaa
 
           {tulos && (
             <>
-              <div style={{ fontWeight: 600, fontSize: 15 }}>{tulos.nimi}</div>
-              <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>
+              <div style={{ fontWeight: 600, fontSize: 16, lineHeight: 1.3 }}>{tulos.nimi}</div>
+              <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>
                 arvion varmuus: {tulos.varmuus}
               </div>
               {tulos.huomio && (
@@ -88,44 +100,58 @@ export default function Analyysi({ odottava, apiAvain, malli, onKirjaa, onHylkaa
       {/* Erittely riveittäin, ei yhtenä pötkönä: kokonaisluvut ovat näiden summa,
           joten väärä rivi kertoo suoraan mikä arviossa meni pieleen. */}
       {tulos && tulos.ainesosat.length > 0 && (
-        <div style={{ marginTop: 12, borderTop: `1px solid ${C.line}` }}>
+        <div style={{ marginTop: 14, borderTop: `1px solid ${C.line}` }}>
           {tulos.ainesosat.map((a, i) => (
             <div
               key={i}
               style={{
                 display: "flex",
                 alignItems: "baseline",
-                gap: 8,
-                padding: "8px 0",
+                gap: 10,
+                padding: "9px 0",
                 borderBottom: `1px solid ${C.line}`,
               }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13 }}>
+                <div style={{ fontSize: 14 }}>
                   {a.aine}
                   {a.maara_g ? <span style={{ color: C.muted }}> {a.maara_g} g</span> : null}
                   {a.lahde === "pakkausmerkintä" && (
-                    <span style={{ color: C.pine, fontSize: 11 }}> pakkauksesta</span>
+                    <span
+                      style={{
+                        marginLeft: 6,
+                        fontSize: 11,
+                        color: C.pine,
+                        background: C.pineSoft,
+                        borderRadius: 4,
+                        padding: "1px 5px",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      pakkauksesta
+                    </span>
                   )}
                 </div>
                 {a.peruste && (
-                  <div style={{ fontSize: 11, color: C.muted, marginTop: 2, lineHeight: 1.4 }}>
+                  <div style={{ fontSize: 12, color: C.muted, marginTop: 3, lineHeight: 1.4 }}>
                     {a.peruste}
                   </div>
                 )}
               </div>
               <div
                 style={{
-                  fontSize: 12,
-                  color: C.muted,
+                  fontSize: 13,
                   textAlign: "right",
                   flexShrink: 0,
                   fontVariantNumeric: "tabular-nums",
+                  lineHeight: 1.45,
                 }}
               >
-                {a.kcal} kcal
+                {a.kcal} <span style={{ color: C.muted, fontSize: 12 }}>kcal</span>
                 <br />
-                {a.proteiini} g prot.
+                <span style={{ color: C.pine }}>
+                  {a.proteiini} <span style={{ fontSize: 12 }}>g</span>
+                </span>
               </div>
             </div>
           ))}
@@ -134,33 +160,45 @@ export default function Analyysi({ odottava, apiAvain, malli, onKirjaa, onHylkaa
 
       {tulos && (
         <>
-          <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-            <Lukukentta otsikko="kcal" arvo={kcal} onChange={setKcal} />
-            <Lukukentta otsikko="proteiini (g)" arvo={proteiini} onChange={setProteiini} />
+          <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+            <Lukukentta otsikko="Energia" yksikko="kcal" arvo={kcal} onChange={setKcal} />
+            <Lukukentta otsikko="Proteiini" yksikko="g" arvo={proteiini} onChange={setProteiini} />
+          </div>
+          <div style={{ fontSize: 12, color: C.muted, marginTop: 8, lineHeight: 1.5 }}>
+            Korjaa luvut ennen kirjaamista, jos tiedät paremmin. Alkuperäinen arvio tallentuu
+            erikseen tarkkuuden seurantaa varten.
           </div>
 
-          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-            <button onClick={tallenna} disabled={tallentaa} style={{ ...paanappi, flex: 1, opacity: tallentaa ? 0.6 : 1 }}>
+          <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+            <button
+              onClick={tallenna}
+              disabled={tallentaa}
+              style={{ ...paanappi, flex: 1, opacity: tallentaa ? 0.6 : 1 }}
+            >
               {tallentaa ? "Tallennetaan…" : "Kirjaa ateria"}
             </button>
             <button onClick={onHylkaa} style={haamunappi}>
-              Hylkää
+              Takaisin
             </button>
           </div>
 
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 10 }}>
+          <div style={{ fontSize: 11, color: C.faint, marginTop: 10 }}>
             {tulos.sisaanTokenit + tulos.ulosTokenit} tokenia &middot;{" "}
             {hintaDollareina(tulos.malli, tulos.sisaanTokenit, tulos.ulosTokenit)
               .toFixed(4)
               .replace(".", ",")}{" "}
-            $ &middot; {tulos.malli}
+            $ &middot; {malliNimi}
           </div>
         </>
       )}
 
       {virhe && (
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <button onClick={suorita} disabled={ladataa} style={{ ...paanappi, flex: 1, opacity: ladataa ? 0.6 : 1 }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          <button
+            onClick={suorita}
+            disabled={ladataa}
+            style={{ ...paanappi, flex: 1, opacity: ladataa ? 0.6 : 1 }}
+          >
             Yritä uudelleen
           </button>
           {virhe.avainOngelma && (
@@ -169,7 +207,7 @@ export default function Analyysi({ odottava, apiAvain, malli, onKirjaa, onHylkaa
             </button>
           )}
           <button onClick={onHylkaa} style={haamunappi}>
-            Hylkää
+            Takaisin
           </button>
         </div>
       )}
