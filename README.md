@@ -38,19 +38,41 @@ ainoa asia, joka oikeasti rajoittaa vahinkoa, jos avain vuotaa.
 
 Kuva maksaa `⌈leveys/28⌉ × ⌈korkeus/28⌉` visuaalista tokenia. Appi skaalaa
 pisimmän sivun 1568 pikseliin, joten 1568×1176 kuva on 2352 tokenia eikä sitä
-skaalata alaspäin millään mallilla. Promptin kanssa yhteensä noin 2 600 tokenia
-sisään ja 300 ulos.
+skaalata alaspäin millään mallilla. Promptin kanssa yhteensä noin 2 800 tokenia
+sisään ja 350 ulos. Opus 5.5 ajattelee aina, ja ajattelu laskutetaan
+ulostulona; arviossa sille on lisätty noin 1 500 tokenia.
 
-| Malli | $/analyysi | Analyysiä ~5 $:lla |
-|---|---|---|
-| Haiku 4.5 | 0,0041 | ~1 200 |
-| Sonnet 5 (oletus) | 0,0082 | ~600 |
-| Opus 5 | 0,0205 | ~240 |
+Hinnat tarkistettu 28.10.2026 ([pricing](https://platform.claude.com/docs/en/about-claude/pricing)):
+
+| Malli | $ / M tokenia (sisään / ulos) | $/analyysi | Vuodessa, 3 ateriaa/pv |
+|---|---|---|---|
+| Haiku 5.5 | 0,10 / 0,50 | 0,0005 | ~0,50 $ |
+| Sonnet 5.5 (oletus) | 2 / 10 | 0,009 | ~10 $ |
+| Opus 5.5 | 4 / 20 | ~0,05 | ~50 $ |
+
+Haiku 5.5:n hinta viisinkertaistuu yli 100 000 tokenin kehotteilla; yksi
+ateriakuva on noin 3 000 tokenia, joten raja ei tule vastaan.
 
 Kuvaa lähetettiin aiemmin 768 pikselin levyisenä, jolloin analyysi maksoi noin
 kolmanneksen tästä. Se ei riittänyt lukemaan pakkauksen ravintosisältötaulukkoa,
 ja juuri se lukema on tarkin saatavilla oleva tieto — halvempi väärä luku ei ole
-säästö. Kolmella aterialla päivässä vuosikustannus on Sonnetilla noin 9 $.
+säästö.
+
+### Mallit ja ajattelu
+
+Ajattelun saa pois eri tavalla eri malleissa, ja väärä arvo palauttaa
+400-virheen. Asetukset ovat `api.js`:n `MALLIT`-taulukossa:
+
+| Malli | `thinking` | `max_tokens` |
+|---|---|---|
+| Haiku 5.5 | `{ type: "disabled" }` | 1 500 |
+| Sonnet 5.5 | `{ type: "between_tools" }` — `disabled` palauttaa 400 | 1 500 |
+| Opus 5.5 | kenttä jätetään pois, ajattelu on aina päällä | 8 000 |
+
+`HINNAT`-taulukossa ovat myös aiemmin valittavissa olleet mallit (Sonnet 5,
+Haiku 4.5, Opus 5), koska asetusten kulutusluku laskee vanhojen aterioiden
+hinnan niihin tallennetusta mallista. Laitteelle tallennettu vanha valinta
+siirretään käynnistyksessä saman tason uuteen malliin (`voimassaOlevaMalli`).
 
 Nämä ovat arvioita. Appi tallentaa jokaisen kutsun todellisen
 token-kulutuksen ateriariville, ja asetusnäkymä näyttää toteutuneen
@@ -63,7 +85,7 @@ tarkempi kuin mikään arvio.
 src/
   api.js            Claude-kutsu, hinnoittelu, virheiden tulkinta
   db.js             IndexedDB: ateriat + asetukset
-  image.js          Skaalaus 768 px, pikkukuva 300 px, EXIF-kierto
+  image.js          Skaalaus 1568 px, pikkukuva 300 px, EXIF-kierto
   dates.js          Päivämääräapurit
   ui.jsx            Väripaletti, tyylit, jaetut komponentit
   App.jsx           Näkymien vaihto, asetusten lataus
@@ -111,10 +133,11 @@ Store `asetukset`, keyPath `nimi`: `apiAvain`, `malli`.
 Kolme muutosta, kaikki briefin omien tavoitteiden suuntaan:
 
 - **Malli `claude-sonnet-5`**, ei `claude-sonnet-4-6`. Uudempi ja halvempi:
-  2 $/10 $ per miljoona tokenia versus 3 $/15 $.
-- **`thinking: { type: "disabled" }`.** Sonnet 5:llä parametrin pois jättäminen
-  ajaisi adaptiivisen ajattelun ja laskuttaisi siitä. Tämä tehtävä ei hyödy
-  siitä.
+  2 $/10 $ per miljoona tokenia versus 3 $/15 $. (Lokakuussa 2026 vaihdettu
+  5.5-malleihin, ks. Kustannus.)
+- **Ajattelu pois päältä.** Parametrin pois jättäminen ajaisi adaptiivisen
+  ajattelun ja laskuttaisi siitä. Tapa vaihtelee mallin mukaan, ks. Mallit ja
+  ajattelu.
 - **Rakenteinen vastaus** (`output_config.format`) vapaan JSONin sijaan. Malli
   ei voi tuottaa skeeman vastaista vastausta, joten koodilohkojen siivousta ja
   sulkeiden etsimistä ei tarvita eikä parsintavirhettä voi tulla. Skeema ei tue

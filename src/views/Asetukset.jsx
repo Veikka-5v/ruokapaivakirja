@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { kaikkiAteriat, korvaaKaikkiAteriat } from "../db.js";
-import { MALLIT, OLETUSMALLI, hintaDollareina } from "../api.js";
+import { MALLIT, OLETUSMALLI, hintaDollareina, arvioiHinta, muotoileDollarit } from "../api.js";
 import { C, kortti, kentta, paanappi, haamunappi, serif, Otsikko, Rivi, Virheruutu } from "../ui.jsx";
 import { VERSIO, KAANNETTY, muotoileAika, haePalvelimenVersio, paivitaNyt } from "../versio.js";
 
@@ -12,6 +12,11 @@ function naytaAvain(avain) {
 
 function dollareina(arvo, desimaalit = 3) {
   return arvo.toFixed(desimaalit).replace(".", ",");
+}
+
+// 0.1 → "0,10", 2 → "2"
+function miljoonaHinta(arvo) {
+  return (arvo < 1 ? arvo.toFixed(2) : String(arvo)).replace(".", ",");
 }
 
 export default function Asetukset({ apiAvain, malli, onVaihdaAvain, onVaihdaMalli }) {
@@ -213,8 +218,14 @@ export default function Asetukset({ apiAvain, malli, onVaihdaAvain, onVaihdaMall
                 <span style={{ color: C.muted, fontSize: 12 }}>({m.kuvaus})</span>
               </div>
               <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
-                {m.sisaan} $ / {m.ulos} $ per miljoona tokenia
+                {miljoonaHinta(m.sisaan)} $ / {miljoonaHinta(m.ulos)} $ per miljoona tokenia
               </div>
+            </div>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div style={{ fontFamily: serif, fontSize: 16, fontVariantNumeric: "tabular-nums" }}>
+                {muotoileDollarit(arvioiHinta(id))} $
+              </div>
+              <div style={{ fontSize: 11, color: C.muted }}>/ analyysi</div>
             </div>
           </label>
         ))}

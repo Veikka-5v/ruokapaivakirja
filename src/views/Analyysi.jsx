@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { analysoiKuva, hintaDollareina, MALLIT } from "../api.js";
+import { analysoiKuva, hintaDollareina, muotoileDollarit, MALLIT } from "../api.js";
 import { C, kortti, paanappi, haamunappi, Lukukentta } from "../ui.jsx";
 
 // Liitetään vasta kun käyttäjä painaa Analysoi, ja kutsu lähtee heti
@@ -184,9 +184,7 @@ export default function Analyysi({ odottava, apiAvain, malli, onKirjaa, onHylkaa
 
           <div style={{ fontSize: 11, color: C.faint, marginTop: 10 }}>
             {tulos.sisaanTokenit + tulos.ulosTokenit} tokenia &middot;{" "}
-            {hintaDollareina(tulos.malli, tulos.sisaanTokenit, tulos.ulosTokenit)
-              .toFixed(4)
-              .replace(".", ",")}{" "}
+            {muotoileDollarit(hintaDollareina(tulos.malli, tulos.sisaanTokenit, tulos.ulosTokenit))}{" "}
             $ &middot; {malliNimi}
           </div>
         </>

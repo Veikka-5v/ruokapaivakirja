@@ -5,26 +5,97 @@
 const PAATE = "https://api.anthropic.com/v1/messages";
 const API_VERSIO = "2023-06-01";
 
-// Hinnat dollaria per miljoona tokenia.
-export const MALLIT = {
-  "claude-sonnet-5": { nimi: "Sonnet 5", kuvaus: "suositus", sisaan: 2, ulos: 10 },
-  "claude-haiku-4-5": { nimi: "Haiku 4.5", kuvaus: "halvin", sisaan: 1, ulos: 5 },
-  "claude-opus-5": { nimi: "Opus 5", kuvaus: "tarkin", sisaan: 5, ulos: 25 },
+// Hinnat dollaria per miljoona tokenia (platform.claude.com/docs/en/about-claude/pricing,
+// tarkistettu 28.10.2026).
+//
+// Tässä ovat kaikki mallit, joita appi on koskaan käyttänyt, myös ne joita ei
+// enää voi valita. Asetusten kulutusluku laskee vanhojen aterioiden hinnan
+// niihin tallennetusta mallista, ja ilman vanhaa hintaa ne laskettaisiin
+// nykyisen oletusmallin hinnalla väärin.
+//
+// Haiku 5.5:n hinta nousee viisinkertaiseksi yli 100 000 tokenin kehotteilla.
+// Yksi ateriakuva on noin 3 000 tokenia, joten raja ei tule vastaan.
+const HINNAT = {
+  "claude-haiku-5-5": { sisaan: 0.1, ulos: 0.5 },
+  "claude-sonnet-5-5": { sisaan: 2, ulos: 10 },
+  "claude-opus-5-5": { sisaan: 4, ulos: 20 },
+  // Aiemmin valittavissa olleet:
+  "claude-sonnet-5": { sisaan: 2, ulos: 10 },
+  "claude-haiku-4-5": { sisaan: 1, ulos: 5 },
+  "claude-opus-5": { sisaan: 5, ulos: 25 },
 };
 
-export const OLETUSMALLI = "claude-sonnet-5";
+// Valittavat mallit. Ajattelun saa pois päältä eri tavalla eri malleissa,
+// ja väärä tapa palauttaa 400-virheen:
+//   - Haiku 5.5 hyväksyy vielä { type: "disabled" } (oletusponnistus medium).
+//   - Sonnet 5.5 hylkää "disabled"-arvon; ajattelu pois on
+//     { type: "between_tools" }. Ilman työkaluja se tarkoittaa: ei ajattelua.
+//   - Opus 5.5 ajattelee aina eikä ajattelua voi ottaa pois, joten kenttä
+//     jätetään pois. Ajattelu laskutetaan ulostulotokeneina, joten
+//     max_tokens on isompi ja hinta-arvioon lisätään arvioitu ajattelu.
+export const MALLIT = {
+  "claude-haiku-5-5": {
+    nimi: "Haiku 5.5",
+    kuvaus: "halvin",
+    ajattelu: { type: "disabled" },
+    maxTokens: 1500,
+    ajatteluArvio: 0,
+    ...HINNAT["claude-haiku-5-5"],
+  },
+  "claude-sonnet-5-5": {
+    nimi: "Sonnet 5.5",
+    kuvaus: "oletus",
+    ajattelu: { type: "between_tools" },
+    maxTokens: 1500,
+    ajatteluArvio: 0,
+    ...HINNAT["claude-sonnet-5-5"],
+  },
+  "claude-opus-5-5": {
+    nimi: "Opus 5.5",
+    kuvaus: "ajattelee aina, kallein",
+    ajattelu: null,
+    maxTokens: 8000,
+    ajatteluArvio: 1500,
+    ...HINNAT["claude-opus-5-5"],
+  },
+};
+
+export const OLETUSMALLI = "claude-sonnet-5-5";
+
+// Laitteelle tallennettu vanha mallivalinta siirretään saman tason uuteen
+// malliin, jotta valinta ei katoa eikä appi lähetä kutsua mallille, jota ei
+// enää tarjota.
+const KORVAAJAT = {
+  "claude-sonnet-5": "claude-sonnet-5-5",
+  "claude-haiku-4-5": "claude-haiku-5-5",
+  "claude-opus-5": "claude-opus-5-5",
+};
+
+export function voimassaOlevaMalli(id) {
+  if (MALLIT[id]) return id;
+  return KORVAAJAT[id] || OLETUSMALLI;
+}
 
 export function hintaDollareina(malli, sisaanTokenit, ulosTokenit) {
-  const m = MALLIT[malli] || MALLIT[OLETUSMALLI];
-  return ((sisaanTokenit || 0) * m.sisaan + (ulosTokenit || 0) * m.ulos) / 1e6;
+  const h = HINNAT[malli] || HINNAT[OLETUSMALLI];
+  return ((sisaanTokenit || 0) * h.sisaan + (ulosTokenit || 0) * h.ulos) / 1e6;
 }
 
 // Arvio ennen kutsua, jotta hinnan näkee ennen Analysoi-painallusta.
 // Kuva: ⌈leveys/28⌉ × ⌈korkeus/28⌉ tokenia. Ohje ja skeema noin 450 tokenia
-// sisään, eritelty vastaus noin 350 ulos. Toteutunut hinta näkyy tuloksessa.
+// sisään, eritelty vastaus noin 350 ulos, ja Opukselle lisäksi ajattelu.
+// Toteutunut hinta näkyy tuloksessa.
 export function arvioiHinta(malli, leveys, korkeus) {
   const kuva = Math.ceil((leveys || 1568) / 28) * Math.ceil((korkeus || 1176) / 28);
-  return hintaDollareina(malli, kuva + 450, 350);
+  const m = MALLIT[malli] || MALLIT[OLETUSMALLI];
+  return hintaDollareina(malli, kuva + 450, 350 + m.ajatteluArvio);
+}
+
+// Hinta luettavaksi: alle sentin summissa riittävästi desimaaleja, että
+// Haikun 0,0005 $ ei näy nollana.
+export function muotoileDollarit(arvo) {
+  const desimaalit = arvo >= 0.01 ? 3 : arvo >= 0.001 ? 4 : 5;
+  return arvo.toFixed(desimaalit).replace(".", ",");
 }
 
 const OHJE = `Olet ravitsemusanalyytikko. Arvioi kuvassa näkyvä ateria.
@@ -153,6 +224,25 @@ export async function analysoiKuva({ base64, lisatieto, avain, malli = OLETUSMAL
 
   const teksti = lisatieto ? `${OHJE}\n\nKäyttäjän lisätieto: ${lisatieto}` : OHJE;
 
+  malli = voimassaOlevaMalli(malli);
+  const asetus = MALLIT[malli];
+  const runko = {
+    model: malli,
+    max_tokens: asetus.maxTokens,
+    output_config: { format: { type: "json_schema", schema: SKEEMA } },
+    messages: [
+      {
+        role: "user",
+        // Kuva ennen tekstiä: malli toimii näin parhaiten.
+        content: [
+          { type: "image", source: { type: "base64", media_type: "image/jpeg", data: base64 } },
+          { type: "text", text: teksti },
+        ],
+      },
+    ],
+  };
+  if (asetus.ajattelu) runko.thinking = asetus.ajattelu;
+
   let vastaus;
   try {
     vastaus = await fetch(PAATE, {
@@ -164,37 +254,20 @@ export async function analysoiKuva({ base64, lisatieto, avain, malli = OLETUSMAL
         // Avaa CORSin selainpuolen bring-your-own-key-sovelluksille.
         "anthropic-dangerous-direct-browser-access": "true",
       },
-      body: JSON.stringify({
-        model: malli,
-        max_tokens: 1000,
-        // Ilman tätä Sonnet 5 ajaa adaptiivisen ajattelun ja laskuttaa siitä.
-        // Tämä tehtävä ei hyödy siitä, joten se on pois päältä.
-        thinking: { type: "disabled" },
-        output_config: { format: { type: "json_schema", schema: SKEEMA } },
-        messages: [
-          {
-            role: "user",
-            // Kuva ennen tekstiä: malli toimii näin parhaiten.
-            content: [
-              { type: "image", source: { type: "base64", media_type: "image/jpeg", data: base64 } },
-              { type: "text", text: teksti },
-            ],
-          },
-        ],
-      }),
+      body: JSON.stringify(runko),
     });
   } catch (e) {
     throw new ApiVirhe("Ei verkkoyhteyttä. Kuva säilyy, voit yrittää uudelleen.");
   }
 
   if (!vastaus.ok) {
-    let runko = null;
+    let virheRunko = null;
     try {
-      runko = await vastaus.json();
+      virheRunko = await vastaus.json();
     } catch (e) {
       // virheruntoa ei aina ole
     }
-    throw tulkitseVirhe(vastaus.status, runko);
+    throw tulkitseVirhe(vastaus.status, virheRunko);
   }
 
   const data = await vastaus.json();
@@ -202,7 +275,15 @@ export async function analysoiKuva({ base64, lisatieto, avain, malli = OLETUSMAL
   if (data.stop_reason === "max_tokens") {
     throw new ApiVirhe("Vastaus katkesi kesken. Yritä uudelleen.");
   }
+  // 5.5-mallien turvaluokittimet voivat hylätä pyynnön, jolloin vastauksessa ei
+  // ole JSONia. Ilman tätä tarkistusta käyttäjä näkisi harhaanjohtavan
+  // "ei odotetussa muodossa" -virheen.
+  if (data.stop_reason === "refusal") {
+    throw new ApiVirhe("Malli kieltäytyi analysoimasta kuvaa. Kokeile toista kuvaa tai mallia.");
+  }
 
+  // Ajattelevat mallit (Opus 5.5) voivat aloittaa vastauksen thinking-
+  // lohkolla, joten tekstilohkot valitaan tyypin eikä sijainnin mukaan.
   const sisalto = (data.content || [])
     .filter((b) => b.type === "text")
     .map((b) => b.text)

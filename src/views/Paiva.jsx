@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { aterioPaivalle, lisaaAteria, paivitaAteria, poistaAteria } from "../db.js";
 import { kasitteleKuva } from "../image.js";
-import { MALLIT, arvioiHinta } from "../api.js";
+import { MALLIT, arvioiHinta, muotoileDollarit } from "../api.js";
 import { tanaan, siirraPaiva, paivanOtsikko, nytKello } from "../dates.js";
 import {
   C, serif, kortti, kentta, paanappi, haamunappi, pikkunappi, navinappi,
@@ -22,10 +22,6 @@ function uusiId() {
 
 function luku(arvo) {
   return Math.max(0, Math.round(Number(arvo) || 0));
-}
-
-function dollareina(arvo) {
-  return arvo.toFixed(3).replace(".", ",");
 }
 
 export default function Paiva({ apiAvain, malli, onAvaaAsetukset }) {
@@ -535,7 +531,7 @@ function Esikatselu({ kuva, lisatieto, onLisatieto, malli, kasittelee, onVaihda,
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
         <div style={{ fontSize: 12, color: C.muted }}>
-          noin {dollareina(hinta)} $ · {malliNimi}
+          noin {muotoileDollarit(hinta)} $ · {malliNimi}
         </div>
         <div style={{ display: "flex", alignItems: "center" }}>
           <label

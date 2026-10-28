@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { haeAsetus, tallennaAsetus, poistaAsetus } from "./db.js";
-import { OLETUSMALLI } from "./api.js";
+import { OLETUSMALLI, voimassaOlevaMalli } from "./api.js";
 import { C } from "./ui.jsx";
 import Paiva from "./views/Paiva.jsx";
 import Historia from "./views/Historia.jsx";
@@ -29,7 +29,13 @@ export default function App() {
         ]);
         if (peruttu) return;
         setApiAvain(avain || "");
-        setMalli(tallennettuMalli || OLETUSMALLI);
+        // Vanha valinta (esim. Sonnet 5) siirtyy saman tason uuteen malliin
+        // ja tallennetaan, jotta asetusnäkymässä näkyy oikea valinta.
+        const nykyinen = voimassaOlevaMalli(tallennettuMalli || OLETUSMALLI);
+        setMalli(nykyinen);
+        if (nykyinen !== tallennettuMalli) {
+          tallennaAsetus("malli", nykyinen).catch(() => {});
+        }
         // Ensimmäisellä käynnistyksellä ohjataan suoraan avaimen syöttöön.
         if (!avain) setNakyma("asetukset");
       } catch (e) {
